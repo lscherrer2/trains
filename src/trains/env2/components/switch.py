@@ -3,21 +3,31 @@ from dataclasses import dataclass
 from enum import Enum
 
 
+class Branch(Enum):
+    APPROACH = 1
+    THROUGH = 2
+    DIVERGING = 3
+
+
+@dataclass
+class Receptor:
+    """A part of a switch that 'receives' a track segment. Useful for tracking
+    connections between nodes, particularly during graph compilation."""
+
+    parent: Switch
+    branch: Branch
+    track: TrackSegment
+
+
+@dataclass
 class Switch:
-    """"""
-
     state: bool
-    approach: Connection
-    through: Connection
-    diverging: Connection
+    approach: Receptor
+    through: Receptor
+    diverging: Receptor
 
-    class Receptor(Enum):
-        APPROACH = 1
-        THROUGH = 2
-        DIVERGING = 3
 
-    @dataclass
-    class Connection:
-        start: tuple[Switch, Switch.Receptor]
-        end: tuple[Switch, Switch.Receptor]
-        distance: float
+@dataclass
+class TrackSegment:
+    length: float
+    ends: tuple[Receptor, Receptor]
