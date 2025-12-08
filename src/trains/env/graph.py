@@ -1,52 +1,60 @@
 from __future__ import annotations
-from trains.env.components import Switch, TrackSegment
-import networkx as nx
-from enum import Enum
+from trains.env.components import Switch, Track, Train, Branch, BranchType
+from networkx import DiGraph
+from bidict import bidict
+from numpy.typing import NDArray
+import numpy as np
 
 
-class Direction(Enum):
-    FORWARD = 1
-    BACKWARD = 2
-
-
-class Track:
+class Graph:
     switches: list[Switch]
-    tracks: list[TrackSegment]
+    trains: list[Train]
 
-    def to_graph(self) -> nx.DiGraph:
-        G = nx.DiGraph()
+    def encode(self) -> DiGraph:
+        G = DiGraph()
 
-        forward_switches: dict[int, Switch] = {
-            2 * i: switch for i, switch in enumerate(self.switches)
-        }
-        forward_ids: dict[Switch, int] = {
-            switch: i for i, switch in forward_switches.items()
-        }
-        backward_switches: dict[int, Switch] = {
-            2 * i + 1: switch for i, switch in enumerate(self.switches)
-        }
-        backward_ids: dict[Switch, int] = {
-            switch: i for i, switch in backward_switches.items()
-        }
+        f_switch_map = bidict()
+        b_switch_map = bidict()
 
-        # Add nodes for each forward switch
-        for id_, switch in forward_switches.items():
-            G.add_node(id_, x=None)  # Replace with PyG data
+        for i, switch in enumerate(self.switches):
+            f_switch_map |= {switch: 2 * i}
+            b_switch_map |= {switch: 2 * i + 1}
 
-        # Add edges between forward switches
-        for id_, switch in forward_switches.items():
-            through_id = forward_ids[switch.through.other(switch)]
-            diverging_id = forward_ids[switch.diverging.other(switch)]
-            G.add_edge(through_id, diverging_id, x=None)  # Replace with PyG data
+        # Encode forward switches
+        for switch in self.switches:
+            G.add_node(f_switch_map[switch], x=switch.encode())
 
-        # Add nodes for each backward switch
-        for id_, switch in backward_switches.items():
-            G.add_node(id_, x=None)  # Replace with PyG data
+        # Encode backward switches
+        for switch in self.switches
+            G.add_node(b_switch_map[switch], x=switch.encode())
 
-        # Add edges between backward switches
-        for id_, switch in backward_switches.items():
-            through_id = backward_ids[switch.through.other(switch)]
-            diverging_id = backward_ids[switch.diverging.other(switch)]
-            G.add_edge(through_id, diverging_id, x=None)  # Replace with PyG data
+        # Encode through edges
+        for switch in self.switches:
 
-        return nx.DiGraph()  # STUB
+            # node -> through -> node (Forward switch node)
+            from_mapping = f_switch_map 
+            through_switch = switch.through.to().parent
+            encoding = switch.through.encode()
+
+            # Connect to the forward or backward node?
+            if switch.through.to().type_ == BranchType.APPROACH:
+                to_mapping = f_switch_map
+            else:
+                to_mapping = b_switch_map
+
+            G.add_edge(
+                from_mapping[switch], 
+                to_mapping[through_switch], 
+                x=np.concat((encoding, self.encode_overlap(switch.through)), axis=0),
+            )
+
+        return G
+
+
+    def encode_overlap(self, branch: Branch) -> NDArray[np.float32]: # type: ignore
+        # TODO: Implement
+        pass
+
+
+
+
