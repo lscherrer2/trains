@@ -94,6 +94,33 @@ class Train:
     history: list[Branch]
     progress: float
     speed: float
+    length: float
+
+    def prune(self):
+        length_so_far = self.history[-1].track.length * self.progress
+        new_history: list[Branch] = [self.history[-1]]
+        for branch in self.history[1:][::-1]:
+            if length_so_far > self.length:
+                break
+
+            new_history.insert(0, branch)
+            length_so_far += branch.track.length
+        self.history = new_history
+
+    @property
+    def tail_progress(self) -> float:
+        """The progress along the branch of the tail"""
+        self.prune()
+
+        length_so_far = self.progress * self.history[-1].track.length
+        for branch in self.history[1:-1][::-1]:
+            length_so_far += branch.track.length
+
+        return 1.0 - (self.length - length_so_far) / self.history[0].track.length
+
+    @tail_progress.setter
+    def reverse_progress(self, _: float) -> float:
+        raise AttributeError("Train.reverse_progress is read-only")
 
     def step(self, dt: float):
         """"""

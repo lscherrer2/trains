@@ -1,7 +1,8 @@
 from __future__ import annotations
-from trains.env.components import Switch, Track, Train, Branch, BranchType
+from trains.env.components import Switch, Train, Branch, BranchType
 from networkx import DiGraph
 from bidict import bidict
+from math import floor
 from numpy.typing import NDArray
 import numpy as np
 
@@ -45,16 +46,35 @@ class Graph:
             G.add_edge(
                 from_mapping[switch], 
                 to_mapping[through_switch], 
-                x=np.concat((encoding, self.encode_overlap(switch.through)), axis=0),
+                x=np.concat(
+                    (encoding, self.encode_overlap(switch.through, 10)), 
+                    axis=0,
+                ),
             )
 
         return G
 
 
-    def encode_overlap(self, branch: Branch) -> NDArray[np.float32]: # type: ignore
-        # TODO: Implement
-        pass
+    def encode_overlap(
+        self, 
+        branch: Branch, 
+        segments: int
+    ) -> NDArray[np.float32]: # type: ignore
+        overlap = np.zeros((segments,), dtype=np.float32)
 
+        for train in self.trains:
+            train.prune()
 
+            if branch in train.history[1:-1]:
+                overlap[:] = 1.0
+                break
 
+            if branch is train.history[0]:
+                split = segments * train.progress
+                overlap[:floor(split)] = 1.0
 
+            if branch is train.history[-1]:
+                split = segments * train.tail_progress
+                overlap[floor(split):] = 1.0
+
+        return overlap
