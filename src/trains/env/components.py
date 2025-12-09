@@ -11,6 +11,14 @@ class BranchType(Enum):
     THROUGH = 2
     DIVERGING = 3
 
+    @classmethod
+    def from_str(cls, s: str) -> BranchType:
+        return {
+            "approach": BranchType.APPROACH,
+            "through": BranchType.THROUGH,
+            "diverging": BranchType.DIVERGING,
+        }[s]
+
 
 class Branch:
     parent: Switch
@@ -70,6 +78,15 @@ class Switch(IdentityHash):
         self.approach = Branch(self, BranchType.APPROACH)
         self.through = Branch(self, BranchType.THROUGH)
         self.diverging = Branch(self, BranchType.DIVERGING)
+
+    def get_branch(self, type_: BranchType | str) -> Branch:
+        if isinstance(type_, str):
+            type_ = BranchType.from_str(type_)
+        return {
+            BranchType.APPROACH: self.approach,
+            BranchType.THROUGH: self.through,
+            BranchType.DIVERGING: self.diverging,
+        }[type_]
 
     def encode(self) -> NDArray[np.float32]:
         return np.array(float(self.state), dtype=np.float32)

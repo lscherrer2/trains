@@ -1,15 +1,26 @@
 from __future__ import annotations
-from trains.env.components import Switch, Train, Branch, BranchType
+from trains.env.components import Switch, Track, Train, Branch, BranchType
 from networkx import DiGraph
 from bidict import bidict
 from math import floor
 from numpy.typing import NDArray
 import numpy as np
-
+from trains.serialization import GraphModel
+from pydantic import BaseModel
+from trains.serialization import graph_from_json
 
 class Graph:
     switches: list[Switch]
     trains: list[Train]
+
+    def __init__(self, switches: list[Switch], trains: list[Train]):
+        self.switches = switches
+        self.trains = trains
+
+    @classmethod
+    def from_json(cls, json: dict) -> Graph:
+        return graph_from_json(json) 
+
 
     def encode(self) -> DiGraph:
         G = DiGraph()
