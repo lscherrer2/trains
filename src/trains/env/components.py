@@ -1,10 +1,9 @@
 from __future__ import annotations
-from dataclasses import dataclass
-from enum import Enum
-from typing import overload
 from trains.util import IdentityHash
-import numpy as np
 from numpy.typing import NDArray
+from typing import overload
+from enum import Enum
+import numpy as np
 
 
 class BranchType(Enum):
@@ -13,11 +12,19 @@ class BranchType(Enum):
     DIVERGING = 3
 
 
-@dataclass
 class Branch:
     parent: Switch
     track: Track
     type_: BranchType
+    _TAG_MAP = {
+        BranchType.APPROACH: -1.0,
+        BranchType.THROUGH: 1.0,
+        BranchType.DIVERGING: 0.0,
+    }
+
+    def __init__(self, parent: Switch, type_: BranchType) -> None:
+        self.type_ = type_
+        self.parent = parent
 
     def to(self) -> Branch:
         return self.track.other(self)
@@ -30,19 +37,19 @@ class Branch:
         return self.parent.pass_through(self)
 
     def encode(self) -> NDArray[np.float32]:
-        # Chosen to encode orthogonality
-        TAG_MAP = {
-            BranchType.APPROACH: -1.0,
-            BranchType.THROUGH: 1.0,
-            BranchType.DIVERGING: 0.0,
-        }
-        return np.array([TAG_MAP[self.type_]], dtype=np.float32)
+        # Vaguely encodes orthogonality
+        return np.array([self._TAG_MAP[self.type_]], dtype=np.float32)
 
 
-@dataclass
 class Track:
     ends: tuple[Branch, Branch]
     length: float
+
+    def __init__(self, ends: tuple[Branch, Branch], length: float) -> None:
+        self.ends = ends
+        self.ends[0].track = self
+        self.ends[1].track = self
+        self.length = length
 
     def other(self, branch: Branch) -> Branch:
         """Given one end of the connection, get the other."""
@@ -53,12 +60,16 @@ class Track:
         return self.ends[1] if self.ends[0] is branch else self.ends[0]
 
 
-@dataclass(eq=False, unsafe_hash=False)
 class Switch(IdentityHash):
     approach: Branch
     through: Branch
     diverging: Branch
     state: bool
+
+    def __init__(self):
+        self.approach = Branch(self, BranchType.APPROACH)
+        self.through = Branch(self, BranchType.THROUGH)
+        self.diverging = Branch(self, BranchType.DIVERGING)
 
     def encode(self) -> NDArray[np.float32]:
         return np.array(float(self.state), dtype=np.float32)
@@ -89,12 +100,24 @@ class Switch(IdentityHash):
             return self.approach
 
 
-@dataclass
 class Train:
     history: list[Branch]
     progress: float
     speed: float
     length: float
+
+    def __init__(
+        self,
+        length: float,
+        speed: float,
+        head_progress: float,
+        span: list[Branch],
+    ) -> None:
+        self.length = length
+        self.speed = speed
+        self.progress = head_progress
+        self.history = span
+        self.prune()
 
     def prune(self):
         length_so_far = self.history[-1].track.length * self.progress
@@ -103,6 +126,7 @@ class Train:
             if length_so_far > self.length:
                 break
 
+            # TODO: refactor w/ deque
             new_history.insert(0, branch)
             length_so_far += branch.track.length
         self.history = new_history
