@@ -24,6 +24,8 @@ class Branch:
     parent: Switch
     track: Track
     type_: BranchType
+
+    # Vaguely encodes orthogonality
     _TAG_MAP = {
         BranchType.APPROACH: -1.0,
         BranchType.THROUGH: 1.0,
@@ -45,8 +47,8 @@ class Branch:
         return self.parent.pass_through(self)
 
     def encode(self) -> NDArray[np.float32]:
-        # Vaguely encodes orthogonality
-        return np.array([self._TAG_MAP[self.type_]], dtype=np.float32)
+        # Encode branch type and track length
+        return np.array([self.track.length, self._TAG_MAP[self.type_]], dtype=np.float32)
 
 
 class Track:

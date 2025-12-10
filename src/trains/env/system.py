@@ -37,7 +37,7 @@ class System:
 
         return system_from_json(json)
 
-    def encode(self) -> DiGraph:
+    def encode(self, edge_subdivisions: int = 10) -> DiGraph:
         G = DiGraph()
 
         f_switch_map = bidict()
@@ -57,25 +57,27 @@ class System:
 
         # Encode through edges
         for switch in self.switches:
-            # node -> through -> node (Forward switch node)
-            from_mapping = f_switch_map
-            through_switch = switch.through.to().parent
-            encoding = switch.through.encode()
+            for branch in (switch.approach, switch.through, switch.diverging):
+                from_ = branch
+                to = branch.to()
 
-            # Connect to the forward or backward node?
-            if switch.through.to().type_ == BranchType.APPROACH:
-                to_mapping = f_switch_map
-            else:
-                to_mapping = b_switch_map
+                from_node = (
+                    b_switch_map[from_.parent] 
+                    if from_.type_ is BranchType.APPROACH 
+                    else f_switch_map[from_.parent]
+                )
+                to_node = (
+                    f_switch_map[to.parent]
+                    if to.type_ is BranchType.APPROACH
+                    else b_switch_map[to.parent]
+                )
 
-            G.add_edge(
-                from_mapping[switch],
-                to_mapping[through_switch],
-                x=np.concat(
-                    (encoding, self.encode_overlap(switch.through, 10)),
-                    axis=0,
-                ),
-            )
+                edge_data = np.concat((branch.encode(), self.encode_overlap(branch, 10)), axis=0)
+                G.add_edge(
+                    from_node, 
+                    to_node, 
+                    x = edge_data
+                )
 
         return G
 
