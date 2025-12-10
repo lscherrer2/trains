@@ -6,7 +6,7 @@ from enum import Enum
 import numpy as np
 
 
-class BranchType(Enum):
+class BranchType(str, Enum):
     APPROACH = 1
     THROUGH = 2
     DIVERGING = 3
@@ -73,11 +73,14 @@ class Switch(IdentityHash):
     through: Branch
     diverging: Branch
     state: bool
+    tag: int | str | None = None
 
-    def __init__(self):
+    def __init__(self, tag: str | int | None):
         self.approach = Branch(self, BranchType.APPROACH)
         self.through = Branch(self, BranchType.THROUGH)
         self.diverging = Branch(self, BranchType.DIVERGING)
+        self.state = False
+        self.tag = tag
 
     def get_branch(self, type_: BranchType | str) -> Branch:
         if isinstance(type_, str):
@@ -122,6 +125,7 @@ class Train:
     progress: float
     speed: float
     length: float
+    tag: int | str | None
 
     def __init__(
         self,
@@ -129,21 +133,23 @@ class Train:
         speed: float,
         head_progress: float,
         span: list[Branch],
+        tag: int | str | None = None,
     ) -> None:
         self.length = length
         self.speed = speed
         self.progress = head_progress
         self.history = span
-        self.prune()
+        self.tag = tag
+        self.trim()
 
-    def prune(self):
+    def trim(self):
+        # TODO: refactor w/ deque
         length_so_far = self.history[-1].track.length * self.progress
         new_history: list[Branch] = [self.history[-1]]
-        for branch in self.history[1:][::-1]:
+        for branch in self.history[:-1][::-1]:
             if length_so_far > self.length:
                 break
 
-            # TODO: refactor w/ deque
             new_history.insert(0, branch)
             length_so_far += branch.track.length
         self.history = new_history
@@ -151,7 +157,7 @@ class Train:
     @property
     def tail_progress(self) -> float:
         """The progress along the branch of the tail"""
-        self.prune()
+        self.trim()
 
         length_so_far = self.progress * self.history[-1].track.length
         for branch in self.history[1:-1][::-1]:
