@@ -5,6 +5,7 @@ import json
 
 import matplotlib.pyplot as plt
 from matplotlib.patches import FancyArrowPatch
+
 def curved_edges(G, pos, rad=0.2):
     ax = plt.gca()
     for u, v in G.edges():
@@ -45,3 +46,26 @@ class TestEncode(TestCase):
 
         ## Uncomment below to view the graph 
         # draw_graph_curved(G)
+
+        # Number of switches * 2
+        self.assertEqual(G.number_of_nodes(), 4)
+
+        self.assertEqual(G.number_of_edges(0, 0), 0)
+        self.assertEqual(G.number_of_edges(0, 1), 0)
+        self.assertEqual(G.number_of_edges(0, 2), 1)
+        self.assertEqual(G.number_of_edges(0, 3), 1)
+
+        self.assertEqual(G.number_of_edges(1, 0), 0)
+        self.assertEqual(G.number_of_edges(1, 1), 0)
+        self.assertEqual(G.number_of_edges(1, 2), 0)
+        self.assertEqual(G.number_of_edges(1, 3), 1)
+
+        self.assertEqual(G.number_of_edges(2, 0), 1)
+        self.assertEqual(G.number_of_edges(2, 1), 1)
+        self.assertEqual(G.number_of_edges(2, 2), 0)
+        self.assertEqual(G.number_of_edges(2, 3), 0)
+
+        self.assertEqual(G.number_of_edges(3, 0), 0)
+        self.assertEqual(G.number_of_edges(3, 1), 1)
+        self.assertEqual(G.number_of_edges(3, 2), 0)
+        self.assertEqual(G.number_of_edges(3, 3), 0)

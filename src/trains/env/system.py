@@ -47,15 +47,20 @@ class System:
             f_switch_map |= {switch: 2 * i}
             b_switch_map |= {switch: 2 * i + 1}
 
-        # Encode forward switches
-        for switch in self.switches:
-            G.add_node(f_switch_map[switch], x=switch.encode())
+        # Encode forward and backward switches
+        for i, switch in enumerate(self.switches):
+            # Orthogonal vector encoding unique to each switch
+            orth = np.zeros((len(self.switches),), dtype=np.float32)
+            orth[i] = 1.0
+            
+            # Concatenate with switch encoding state
+            data = np.concat((switch.encode(), orth), axis=0)
 
-        # Encode backward switches
-        for switch in self.switches:
-            G.add_node(b_switch_map[switch], x=switch.encode())
+            # Add nodes for forward and backward switch
+            G.add_node(f_switch_map[switch], x=data)
+            G.add_node(b_switch_map[switch], x=data)
 
-        # Encode through edges
+        # Encode and add edges
         for switch in self.switches:
             for branch in (switch.approach, switch.through, switch.diverging):
                 from_ = branch
@@ -72,7 +77,7 @@ class System:
                     else b_switch_map[to.parent]
                 )
 
-                edge_data = np.concat((branch.encode(), self.encode_overlap(branch, 10)), axis=0)
+                edge_data = np.concat((branch.encode(), self.encode_overlap(branch, edge_subdivisions)), axis=0)
                 G.add_edge(
                     from_node, 
                     to_node, 
