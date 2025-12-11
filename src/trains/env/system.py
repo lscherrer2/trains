@@ -96,7 +96,7 @@ class System:
                 break
 
             if branch is train.history[0]:
-                split = segments * train.progress
+                split = segments * train.head_progress
                 overlap[: floor(split)] = 1.0
 
             if branch is train.history[-1]:

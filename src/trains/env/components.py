@@ -124,7 +124,7 @@ class Switch(IdentityHash):
 
 class Train:
     history: list[Branch]
-    progress: float
+    head_progress: float
     speed: float
     length: float
     tag: int | str | None
@@ -139,14 +139,24 @@ class Train:
     ) -> None:
         self.length = length
         self.speed = speed
-        self.progress = head_progress
+        self.head_progress = head_progress
         self.history = span
         self.tag = tag
         self.trim()
+    
+    @property
+    def head_distance(self) -> float:
+        """Distance the head is from the switch it is departing"""
+        return self.head_progress * self.history[-1].track.length
+    
+    @property
+    def tail_distance(self) -> float:
+        """Distance the tail is from the switch it is approaching"""
+        return (1.0 - self.tail_progress) * self.history[0].track.length
 
     def trim(self):
         # TODO: refactor w/ deque
-        length_so_far = self.history[-1].track.length * self.progress
+        length_so_far = self.history[-1].track.length * self.head_progress
         new_history: list[Branch] = [self.history[-1]]
         for branch in self.history[:-1][::-1]:
             if length_so_far > self.length:
@@ -161,7 +171,7 @@ class Train:
         """The progress along the branch of the tail"""
         self.trim()
 
-        length_so_far = self.progress * self.history[-1].track.length
+        length_so_far = self.head_progress * self.history[-1].track.length
         for branch in self.history[1:-1][::-1]:
             length_so_far += branch.track.length
 
@@ -184,17 +194,20 @@ class Train:
             )
 
             track = from_.track
-            distance_to_switch = (1.0 - self.progress) * track.length
+            distance_to_switch = (1.0 - self.head_progress) * track.length
 
             # Simple: move forward along track
             if distance < distance_to_switch:
-                self.progress -= distance / track.length
-                return
+                self.head_progress += distance / track.length
+                distance = 0.0
+                continue
 
             # Travel to next switch, deduct distance, repeat step logic
             else:
                 distance -= distance_to_switch  # Deduct distance traveled
                 next_branch = to.pass_through()  # Determine where next
                 self.history.append(next_branch)  # Add next branch to the history
-                self.progress = 0.0  # Zero progress for new track
+                self.head_progress = 0.0  # Zero progress for new track
                 continue
+    
+        self.trim()

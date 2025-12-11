@@ -27,7 +27,12 @@ class TestJsonInit(TestCase):
         self.assertIn("T", G.train_map)
         train = G.train_map["T"]
 
-        self.assertAlmostEqual(train.progress, 0.5, 5)
+        self.assertAlmostEqual(train.head_progress, 0.5, 5)
+        self.assertAlmostEqual(train.tail_progress, 2.0 / 3.0, 5)
+
+        self.assertAlmostEqual(train.head_distance, 5.0, 5)
+        self.assertAlmostEqual(train.tail_distance, 10.0, 5)
+
         self.assertAlmostEqual(train.speed, 1.0, 5)
         self.assertIs(train.history[-1], switch_a.through)
 
@@ -35,7 +40,7 @@ class TestJsonInit(TestCase):
         self.assertIs(train.history[-1], switch_a.through)
         self.assertIs(train.history[-2], switch_b.through)
 
-        self.assertAlmostEqual(train.tail_progress, 2.0 / 3.0, 5)
+
 
     def test_tracks(self):
         G = self.G
