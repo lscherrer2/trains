@@ -3,4 +3,8 @@
 *.egg
 __pycache__/
 
+*/**/*.egg-info/
+*/**/__pycache__/
+__pycache__/
+
 test.py
