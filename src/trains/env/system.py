@@ -54,7 +54,7 @@ class System:
             orth[i] = 1.0
             
             # Concatenate with switch encoding state
-            data = np.concat((switch.encode(), orth), axis=0)
+            data = np.concatenate((switch.encode(), orth))
 
             # Add nodes for forward and backward switch
             G.add_node(f_switch_map[switch], x=data)
@@ -77,7 +77,7 @@ class System:
                     else b_switch_map[to.parent]
                 )
 
-                edge_data = np.concat((branch.encode(), self.encode_overlap(branch, edge_subdivisions)), axis=0)
+                edge_data = np.concatenate((branch.encode(), self.encode_overlap(branch, edge_subdivisions)))
                 G.add_edge(
                     from_node, 
                     to_node, 

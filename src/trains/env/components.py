@@ -94,7 +94,7 @@ class Switch(IdentityHash):
         }[type_]
 
     def encode(self) -> NDArray[np.float32]:
-        return np.array(float(self.state), dtype=np.float32)
+        return np.array([float(self.state)], dtype=np.float32)
 
     @overload
     def pass_through(self, from_: Branch) -> Branch: ...
