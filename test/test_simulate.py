@@ -44,7 +44,6 @@ class TestSim(TestCase):
         self.assertIs(train.history[-2], switch_a.through)
         self.assertIs(train.history[-3], switch_b.through)
         
-
     def test_switch(self):
         train = self.G.trains[0]
         switch_b = self.G.switch_map["B"]
