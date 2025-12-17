@@ -1,35 +1,10 @@
-from __future__ import annotations
-from pydantic import BaseModel
 from trains.env.system import System
-from trains.env.components import Switch, Track, Branch, Train
+from trains.env.components import Switch, Track, Branch
+from trains.env.entities import Train
+from trains.serialization.models import SystemModel
 
 
 __all__ = ["system_from_json"]
-
-
-class SystemModel(BaseModel):
-    switches: list[str | int]
-    tracks: list[TrackModel]
-    trains: list[TrainModel]
-
-
-class TrainModel(BaseModel):
-    tag: int | str | None
-    length: float
-    speed: float
-    head_progress: float
-    history: list[BranchModel]
-
-
-class TrackModel(BaseModel):
-    from_: BranchModel
-    to: BranchModel
-    length: float
-
-
-class BranchModel(BaseModel):
-    switch: str | int
-    type_: str
 
 
 def system_from_json(json: dict) -> System:

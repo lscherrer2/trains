@@ -14,7 +14,7 @@ class TestSim(TestCase):
         train = self.G.trains[0]
         switch_a = self.G.switch_map["A"]
         switch_b = self.G.switch_map["B"]
-        
+
         self.assertAlmostEqual(train.head_progress, 0.5, 5)
         self.assertAlmostEqual(train.tail_progress, 2.0 / 3.0, 5)
 
@@ -40,18 +40,17 @@ class TestSim(TestCase):
         self.assertAlmostEqual(train.head_distance % 10, 5.0, 5)
         self.assertAlmostEqual(train.tail_distance % 10, 0.0, 5)
 
-        self.assertIs(train.history[-1], switch_b.through)
-        self.assertIs(train.history[-2], switch_a.through)
-        self.assertIs(train.history[-3], switch_b.through)
-        
+        self.assertIs(train.history[0], switch_b.through)
+        self.assertIs(train.history[1], switch_a.through)
+        self.assertIs(train.history[2], switch_b.through)
+
     def test_switch(self):
         train = self.G.trains[0]
         switch_b = self.G.switch_map["B"]
 
-        switch_b.state = True # Have it go to diverging
+        switch_b.state = True  # Have it go to diverging
 
         train.step(6.0)
 
-        self.assertIs(train.history[-1].parent, switch_b)
-        self.assertIs(train.history[-1], switch_b.diverging)
-        
+        self.assertIs(train.history[0].parent, switch_b)
+        self.assertIs(train.history[0], switch_b.diverging)

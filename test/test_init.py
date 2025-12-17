@@ -1,4 +1,4 @@
-from unittest import TestCase, main
+from unittest import TestCase
 from trains.env import System
 import json
 
@@ -34,13 +34,11 @@ class TestJsonInit(TestCase):
         self.assertAlmostEqual(train.tail_distance, 10.0, 5)
 
         self.assertAlmostEqual(train.speed, 1.0, 5)
-        self.assertIs(train.history[-1], switch_a.through)
+        self.assertIs(train.history[0], switch_a.through)
 
         self.assertEqual(len(train.history), 2)
-        self.assertIs(train.history[-1], switch_a.through)
-        self.assertIs(train.history[-2], switch_b.through)
-
-
+        self.assertIs(train.history[0], switch_a.through)
+        self.assertIs(train.history[-1], switch_b.through)
 
     def test_tracks(self):
         G = self.G

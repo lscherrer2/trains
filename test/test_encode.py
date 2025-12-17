@@ -1,6 +1,7 @@
 from unittest import TestCase
 from trains.env import System
 import networkx as nx
+import numpy as np
 
 import json
 
@@ -67,3 +68,57 @@ class TestEncode(TestCase):
         self.assertEqual(G.number_of_edges(3, 1), 1)
         self.assertEqual(G.number_of_edges(3, 2), 0)
         self.assertEqual(G.number_of_edges(3, 3), 0)
+
+    def test_node_embeddings(self):
+        G = self.system.encode(edge_subdivisions=10)
+
+        self.assertEqual(G.nodes[0]["x"].shape, (3,))
+        self.assertEqual(G.nodes[1]["x"].shape, (3,))
+        self.assertEqual(G.nodes[2]["x"].shape, (3,))
+        self.assertEqual(G.nodes[3]["x"].shape, (3,))
+
+        self.assertAlmostEqual(float(G.nodes[0]["x"][0]), 0.0, 6)
+        self.assertAlmostEqual(float(G.nodes[2]["x"][0]), 0.0, 6)
+
+        np.testing.assert_allclose(G.nodes[0]["x"], G.nodes[1]["x"])
+        np.testing.assert_allclose(G.nodes[2]["x"], G.nodes[3]["x"])
+
+        np.testing.assert_allclose(
+            G.nodes[0]["x"][1:], np.array([1.0, 0.0], dtype=np.float32)
+        )
+        np.testing.assert_allclose(
+            G.nodes[2]["x"][1:], np.array([0.0, 1.0], dtype=np.float32)
+        )
+
+    def test_encode_overlap(self):
+        n = 10
+        G = self.system.encode(edge_subdivisions=n)
+
+        x = G.edges[0, 2]["x"]
+        self.assertEqual(x.shape, (2 + n,))
+
+        train = self.system.trains[0]
+
+        exp_a = np.zeros((n,), dtype=np.float32)
+        exp_a[: int(np.floor(n * train.head_progress))] = 1.0
+        ov_a = G.edges[0, 2]["x"][2:]
+        np.testing.assert_allclose(ov_a, exp_a)
+
+        exp_b = np.zeros((n,), dtype=np.float32)
+        exp_b[int(np.floor(n * train.tail_progress)) :] = 1.0
+        ov_b = G.edges[2, 0]["x"][2:]
+        np.testing.assert_allclose(ov_b, exp_b)
+
+        ov_d = G.edges[0, 3]["x"][2:]
+        np.testing.assert_allclose(ov_d, np.zeros((n,), dtype=np.float32))
+
+    def test_encode_overlap_full(self):
+        train = self.system.trains[0]
+        train.length = 100.0
+        train.step(5.0)
+
+        n = 10
+        G = self.system.encode(edge_subdivisions=n)
+
+        ov = G.edges[0, 2]["x"][2:]
+        np.testing.assert_allclose(ov, np.ones((n,), dtype=np.float32))

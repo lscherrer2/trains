@@ -1,0 +1,90 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://example.com/trains/system.schema.json",
+	"title": "Train System",
+	"type": "object",
+	"additionalProperties": false,
+	"required": ["switches", "tracks", "trains"],
+	"properties": {
+		"switches": {
+			"type": "array",
+			"minItems": 1,
+			"items": { "$ref": "#/$defs/Tag" }
+		},
+		"tracks": {
+			"type": "array",
+			"items": { "$ref": "#/$defs/Track" }
+		},
+		"trains": {
+			"type": "array",
+			"items": { "$ref": "#/$defs/Train" }
+		}
+	},
+	"$defs": {
+		"Tag": {
+			"description": "An identifier used for switches/trains.",
+			"anyOf": [
+				{ "type": "string", "minLength": 1 },
+				{ "type": "integer" }
+			]
+		},
+		"NullableTag": {
+			"anyOf": [
+				{ "$ref": "#/$defs/Tag" },
+				{ "type": "null" }
+			]
+		},
+		"BranchType": {
+			"type": "string",
+			"enum": ["approach", "through", "diverging"]
+		},
+		"BranchRef": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["switch", "type_"],
+			"properties": {
+				"switch": { "$ref": "#/$defs/Tag" },
+				"type_": { "$ref": "#/$defs/BranchType" }
+			}
+		},
+		"Track": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["from_", "to", "length"],
+			"properties": {
+				"from_": { "$ref": "#/$defs/BranchRef" },
+				"to": { "$ref": "#/$defs/BranchRef" },
+				"length": {
+					"type": "number",
+					"exclusiveMinimum": 0
+				}
+			}
+		},
+		"Train": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["tag", "length", "speed", "head_progress", "history"],
+			"properties": {
+				"tag": { "$ref": "#/$defs/NullableTag" },
+				"length": {
+					"type": "number",
+					"exclusiveMinimum": 0
+				},
+				"speed": {
+					"type": "number"
+				},
+				"head_progress": {
+					"type": "number",
+					"minimum": 0,
+					"maximum": 1
+				},
+				"history": {
+					"description": "Ordered head -> tail (history[0] is head, history[-1] is tail).",
+					"type": "array",
+					"minItems": 1,
+					"items": { "$ref": "#/$defs/BranchRef" }
+				}
+			}
+		}
+	}
+}
