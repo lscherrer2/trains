@@ -1,31 +1,36 @@
 {
-    "switches": ["A", "B"],
+    "switches": ["A", "B", "C"],
     "tracks": [
         {
-            "from_": { "switch": "A", "type_": "through" },
-            "to": { "switch": "B", "type_": "approach" },
+            "from_": {"switch": "A", "type_": "through"},
+            "to": {"switch": "B", "type_": "approach"},
+            "length": 12.0
+        },
+        {
+            "from_": {"switch": "B", "type_": "through"},
+            "to": {"switch": "C", "type_": "approach"},
             "length": 10.0
         },
         {
-            "from_": { "switch": "A", "type_": "diverging" },
-            "to": { "switch": "B", "type_": "diverging" },
-            "length": 20.0
+            "from_": {"switch": "C", "type_": "through"},
+            "to": {"switch": "A", "type_": "approach"},
+            "length": 14.0
         },
         {
-            "from_": { "switch": "A", "type_": "approach" },
-            "to": { "switch": "B", "type_": "through" },
-            "length": 30.0
+            "from_": {"switch": "B", "type_": "diverging"},
+            "to": {"switch": "C", "type_": "diverging"},
+            "length": 18.0
         }
     ],
     "trains": [
         {
             "tag": "T",
-            "speed": 1.0,
-            "head_progress": 0.5,
-            "length": 15.0,
+            "speed": 6.0,
+            "head_progress": 0.10,
+            "length": 10.0,
             "history": [
-                {"switch": "A", "type_": "through" },
-                {"switch": "B", "type_": "through" }
+                {"switch": "A", "type_": "through"},
+                {"switch": "B", "type_": "through"}
             ]
         }
     ]
