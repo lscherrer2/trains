@@ -1,0 +1,40 @@
+{
+  "switches": ["A", "B", "C"],
+  "tracks": [
+    {
+      "from_": { "switch": "A", "type_": "through" },
+      "to": { "switch": "B", "type_": "approach" },
+      "length": 10.0
+    },
+    {
+      "from_": { "switch": "B", "type_": "through" },
+      "to": { "switch": "C", "type_": "approach" },
+      "length": 10.0
+    },
+    {
+      "from_": { "switch": "C", "type_": "through" },
+      "to": { "switch": "A", "type_": "approach" },
+      "length": 10.0
+    }
+  ],
+  "trains": [
+    {
+      "tag": "TL",
+      "speed": 0.0,
+      "head_progress": 0.5,
+      "length": 20.0,
+      "history": [
+        { "switch": "A", "type_": "through" },
+        { "switch": "B", "type_": "through" },
+        { "switch": "C", "type_": "through" }
+      ]
+    },
+    {
+      "tag": "TS",
+      "speed": 0.0,
+      "head_progress": 0.1,
+      "length": 1.0,
+      "history": [{ "switch": "B", "type_": "through" }]
+    }
+  ]
+}

@@ -7,36 +7,35 @@ This project started because there aren't any train frameworks or simulation lib
 (especially for **tightly interconnected layouts**). I originally wrote this to simulate a model 
 train system in the real world.
 
-A **system** is set up as follows:
-- Model the system as **switches**, and each switch has three **branches** (`approach`, `through`, `diverging`)
+A **system** includes the following:
+- A set of switches **switches**, each with three **branches** (`approach`, `through`, `diverging`)
 - Branches are connected together with **tracks**
-- Place **trains** on the network and advance them with `step(dt)`
+- Trains **trains** sit atop the system and are advanced with `step(dt)`
 
 ---
 
 ## Setup
 
 ### Requirements
-- Python **3.13+** (see `pyproject.toml`)
-- Dependencies include `torch` and `torch-geometric` (these can be platform-specific; install your preferred PyTorch build as needed)
+- Python **3.13+**
 
 ### Install (recommended)
-This repo uses `uv` for reproducible installs.
+Use the `uv` package manager for reproducible installs.
 
 ```bash
-./script/install.sh
+./script/install
 ```
 
 ### Run tests
 ```bash
-./script/test.sh
+./script/test
 ```
 
 ---
 
 ## Quickstart
 
-Create a system from JSON, then step the simulation.
+Set up a system with a JSON object or file.
 
 ```python
 import json
@@ -62,12 +61,19 @@ switch_b.state = True
 system.step(dt=1.0)
 ```
 
+However, favor the following method to flipping the switch while a train is overlapping.
+
+```python
+system.set_switch_state("B", True)
+system.step(dt=1.0)
+```
+
 ---
 
 ## JSON format (example)
 
-The most convenient way to describe a layout is via a JSON spec.
-Here’s a minimal example (the same structure as `test/data/system.json`):
+The reommended way to create a layout is via a JSON spec.
+Below is a minimal example from `data/example.json`:
 
 ```json
 {
@@ -131,5 +137,6 @@ data = from_networkx(nx_g, group_node_attrs=["x"], group_edge_attrs=["x"])
 
 ## Project status
 
-This is intentionally small and pragmatic: it’s a compact foundation for experimenting with dense layouts,
-simulation stepping, and graph encodings—grown out of a real-world model train setup.
+This project is still in the works. Its purpose is mainly for training a model to control the 
+switches. However, that part is still in the works. For now it is mainly just for simulating dense
+train systems.

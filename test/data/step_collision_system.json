@@ -1,0 +1,26 @@
+{
+  "switches": ["A", "B"],
+  "tracks": [
+    {
+      "from_": { "switch": "A", "type_": "through" },
+      "to": { "switch": "B", "type_": "approach" },
+      "length": 10.0
+    }
+  ],
+  "trains": [
+    {
+      "tag": "TA",
+      "speed": 1.0,
+      "head_progress": 0.2,
+      "length": 1.0,
+      "history": [{ "switch": "A", "type_": "through" }]
+    },
+    {
+      "tag": "TB",
+      "speed": 1.0,
+      "head_progress": 0.2,
+      "length": 1.0,
+      "history": [{ "switch": "B", "type_": "approach" }]
+    }
+  ]
+}
