@@ -1,9 +1,6 @@
 from __future__ import annotations
 from trains.util import IdentityHash
-from numpy.typing import NDArray
-from typing import overload
 from enum import Enum
-import numpy as np
 
 
 class Switch(IdentityHash):
@@ -29,16 +26,7 @@ class Switch(IdentityHash):
             BranchType.DIVERGING: self.diverging,
         }[type_]
 
-    def encode(self) -> NDArray[np.float32]:
-        return np.array([float(self.state)], dtype=np.float32)
-
-    @overload
-    def pass_through(self, from_: Branch) -> Branch: ...
-
-    @overload
-    def pass_through(self, from_: BranchType) -> Branch: ...
-
-    def pass_through(self, from_: Branch | BranchType) -> Branch:
+    def pass_through(self, from_: Branch | BranchType):
         """Determines what the next branch is through the switch"""
 
         assert isinstance(from_, (Branch, BranchType)), (
@@ -59,9 +47,9 @@ class Switch(IdentityHash):
 
 
 class BranchType(str, Enum):
-    APPROACH = 1
-    THROUGH = 2
-    DIVERGING = 3
+    APPROACH = "approach"
+    THROUGH = "through"
+    DIVERGING = "diverging"
 
     @classmethod
     def from_str(cls, s: str) -> BranchType:
@@ -77,18 +65,11 @@ class Branch:
     track: Track
     type_: BranchType
 
-    # Vaguely encodes orthogonality
-    _TAG_MAP = {
-        BranchType.APPROACH: -1.0,
-        BranchType.THROUGH: 1.0,
-        BranchType.DIVERGING: 0.0,
-    }
-
     def __init__(self, parent: Switch, type_: BranchType) -> None:
         self.type_ = type_
         self.parent = parent
 
-    def to(self) -> Branch:
+    def other(self) -> Branch:
         return self.track.other(self)
 
     def pass_through(self) -> Branch:
@@ -97,12 +78,6 @@ class Branch:
         this branch.
         """
         return self.parent.pass_through(self)
-
-    def encode(self) -> NDArray[np.float32]:
-        # Encode branch type and track length
-        return np.array(
-            [self.track.length, self._TAG_MAP[self.type_]], dtype=np.float32
-        )
 
 
 class Track:
@@ -122,4 +97,3 @@ class Track:
             raise ValueError("Invalid argument for Track.other()")
 
         return self.ends[1] if self.ends[0] is branch else self.ends[0]
-

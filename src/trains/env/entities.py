@@ -80,7 +80,7 @@ class Train:
 
         while distance > 0.0:
             from_ = self.history[0]
-            to = from_.to()
+            to = from_.other()
 
             assert from_.track is to.track, (
                 "From and to receptors must point to the same track"
