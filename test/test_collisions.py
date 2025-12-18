@@ -77,7 +77,7 @@ class TestCollisions(TestCase):
                 G.step(0.5)
             except TrainCollisionError as e:
                 track = G.switch_map["A"].through.track
-                norm = _norm(e.trains)
+                norm = _norm(e.collisions)
                 self.assertIn((frozenset(("TA", "TB")), track), norm)
                 return
 

@@ -11,8 +11,8 @@ class SwitchOverlapError(Exception):
 
 
 class TrainCollisionError(Exception):
-    def __init__(self, trains: set[tuple[Train, Train, Track]]):
-        self.trains = trains
+    def __init__(self, collisions: set[tuple[Train, Train, Track]]):
+        self.collisions = collisions
 
     def __str__(self) -> str:
-        return f"Collision of {len(self.trains)} trains"
+        return f"Collision of {len(self.collisions)} trains"

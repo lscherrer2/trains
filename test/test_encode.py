@@ -45,7 +45,7 @@ class TestEncode(TestCase):
             self.system,
             branch_segments=10,
             collision_value=-20,
-            switch_while_overlapping_value=-1,
+            switch_overlap_value=-1,
             speed_factor=5,
             diverging_factor=3,
         )

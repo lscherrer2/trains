@@ -1,4 +1,6 @@
 from trains.env.components import Switch, BranchType, Branch
+from trains.exceptions import SwitchOverlapError, TrainCollisionError
+from trains.env.entities import Train
 from trains.env.system import System
 from torch_geometric.data import Data
 from torch_geometric.utils import from_networkx
@@ -19,22 +21,78 @@ class SystemEncoding:
     b_switch_map: bidict[Switch, int]
 
 
+@dataclass
+class StepResult:
+    obeservation: SystemEncoding
+    reward: float
+    terminated: bool
+    truncated: bool
+    info: dict
+
+
+@dataclass
+class Action:
+    switch_states: dict[Switch, bool]
+    train_speeds: dict[Train, float]
+
+
 class RLSystemAdapter:
     def __init__(
         self,
         system: System,
+        *,
         branch_segments: int,
         collision_value: float,
-        switch_while_overlapping_value: float,
+        switch_overlap_value: float,
         speed_factor: float,
         diverging_factor: float,
+        max_steps: int | None = None,
     ):
         self.system = system
         self.segments = branch_segments
         self.collision_val = collision_value
-        self.switch_val = switch_while_overlapping_value
+        self.switch_overlap_val = switch_overlap_value
         self.speed_fac = speed_factor
-        self.diverging_fac = diverging_factor
+        self.diverging_val = diverging_factor
+        self.max_steps = max_steps or float("inf")
+        self.steps = 0
+
+    def step(self, action: Action, dt: float) -> StepResult:
+        observation = None
+        reward = 0.0
+        terminated = False
+        truncated = False
+        info = {}
+
+        for switch, state in action.switch_states.items():
+            if state:
+                reward += self.diverging_val
+
+            try:
+                self.system.set_switch_state(switch, state)
+            except SwitchOverlapError:
+                reward += self.switch_overlap_val
+
+        for train, speed in action.train_speeds.items():
+            train.speed = speed
+
+        try:
+            self.system.step(dt)
+            self.steps += 1
+            if self.steps >= self.max_steps:
+                truncated = True
+        except TrainCollisionError as e:
+            reward += self.collision_val * len(e.collisions)
+            terminated = True
+
+        observation = self.encode()
+        return StepResult(
+            observation=observation,
+            reward=reward,
+            terminated=terminated,
+            truncated=truncated,
+            info=info,
+        )
 
     def _encode_switch(self, switch: Switch) -> torch.torch.tensor:
         num_switches = len(self.system.switches)

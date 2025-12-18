@@ -180,6 +180,10 @@ class System:
         if isinstance(switch, (str, int)):
             switch = self.switch_map[switch]
 
+        # Not trying to flip
+        if switch.state == state:
+            return
+
         # Check that no train overlaps switch
         if self.is_switch_overlapped(switch):
             raise SwitchOverlapError("Cannot flip switch while train overlaps")
