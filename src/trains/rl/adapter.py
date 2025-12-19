@@ -23,7 +23,7 @@ class SystemEncoding:
 
 @dataclass
 class StepResult:
-    obeservation: SystemEncoding
+    observation: SystemEncoding
     reward: float
     terminated: bool
     truncated: bool
@@ -32,8 +32,8 @@ class StepResult:
 
 @dataclass
 class Action:
-    switch_states: dict[Switch, bool]
-    train_speeds: dict[Train, float]
+    switch_states: torch.Tensor
+    train_speeds: torch.Tensor
 
 
 class RLSystemAdapter:
@@ -58,13 +58,21 @@ class RLSystemAdapter:
         self.steps = 0
 
     def step(self, action: Action, dt: float) -> StepResult:
+        assert tuple(action.switch_states.shape) == (len(self.system.switches),)
+        assert tuple(action.train_speeds.shape) == (len(self.system.trains),)
+
+        switch_states = map(lambda x: x.item(), action.switch_states)
+        train_speeds = map(lambda x: x.item(), action.train_speeds)
+
         observation = None
         reward = 0.0
         terminated = False
         truncated = False
         info = {}
 
-        for switch, state in action.switch_states.items():
+        for switch, state in zip(self.system.switches, switch_states):
+            state = bool(state)
+
             if state:
                 reward += self.diverging_val
 
@@ -73,8 +81,8 @@ class RLSystemAdapter:
             except SwitchOverlapError:
                 reward += self.switch_overlap_val
 
-        for train, speed in action.train_speeds.items():
-            train.speed = speed
+        for train, speed in zip(self.system.trains, train_speeds):
+            train.speed = float(speed)
 
         try:
             self.system.step(dt)
