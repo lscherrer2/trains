@@ -1,6 +1,5 @@
 from trains.env.components import Switch, BranchType, Branch
 from trains.exceptions import SwitchOverlapError, TrainCollisionError
-from trains.env.entities import Train
 from trains.env.system import System
 from torch_geometric.data import Data
 from torch_geometric.utils import from_networkx
@@ -15,7 +14,7 @@ import math
 
 @dataclass
 class SystemEncoding:
-    pyg_graph: Data
+    data: Data
     nx_graph: DiGraph
     f_switch_map: bidict[Switch, int]
     b_switch_map: bidict[Switch, int]
@@ -56,6 +55,41 @@ class RLSystemAdapter:
         self.diverging_val = diverging_factor
         self.max_steps = max_steps or float("inf")
         self.steps = 0
+
+    @property
+    def node_dim(self) -> int:
+        x = self.encode().data.x
+        if x is None:
+            return 0
+        if x.dim() == 1:
+            return 1
+        return int(x.shape[-1])
+
+    @property
+    def edge_dim(self) -> int:
+        edge_attr = self.encode().data.edge_attr
+        if edge_attr is None:
+            return 0
+        if edge_attr.dim() == 1:
+            return 1
+        return int(edge_attr.shape[-1])
+
+    @property
+    def switch_count(self) -> int:
+        return len(self.system.switches)
+
+    @property
+    def train_count(self) -> int:
+        return len(self.system.trains)
+
+    @property
+    def model_info(self) -> dict[str, int]:
+        return {
+            "train_count": self.train_count,
+            "switch_count": self.switch_count,
+            "node_dim": self.node_dim,
+            "edge_dim": self.edge_dim,
+        }
 
     def step(self, action: Action, dt: float) -> StepResult:
         assert tuple(action.switch_states.shape) == (len(self.system.switches),)
@@ -198,7 +232,7 @@ class RLSystemAdapter:
 
         graph = from_networkx(G)
         return SystemEncoding(
-            pyg_graph=graph,
+            data=graph,
             nx_graph=G,
             f_switch_map=f_switch_map,
             b_switch_map=b_switch_map,

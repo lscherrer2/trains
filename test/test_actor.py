@@ -21,8 +21,8 @@ class TestActor(TestCase):
         )
 
         self.encoding = adapter.encode()
-        x = self.encoding.pyg_graph.x
-        edge_attr = self.encoding.pyg_graph.edge_attr
+        x = self.encoding.data.x
+        edge_attr = self.encoding.data.edge_attr
 
         node_dim = int(x.shape[1])
         edge_dim = int(edge_attr.shape[1]) if edge_attr.dim() > 1 else 1
@@ -38,7 +38,7 @@ class TestActor(TestCase):
         )
 
     def test_forward_shapes(self):
-        switch_states, train_states = self.actor(self.encoding.pyg_graph)
+        switch_states, train_states = self.actor(self.encoding.data)
 
         self.assertEqual(tuple(switch_states.shape), (len(self.system.switches),))
         self.assertEqual(tuple(train_states.shape), (len(self.system.trains),))
