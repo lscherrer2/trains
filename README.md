@@ -19,7 +19,7 @@ A **system** includes the following:
 ### Requirements
 - Python **3.13+**
 
-### Install (recommended)
+### Install
 Use the `uv` package manager for reproducible installs.
 
 ```bash
@@ -70,7 +70,7 @@ system.step(dt=1.0)
 
 ---
 
-## JSON format (example)
+## JSON format example
 
 The reommended way to create a layout is via a JSON spec.
 Below is a minimal example from `data/example.json`:
@@ -117,26 +117,9 @@ Notes:
 
 ---
 
-## Graph encoding (brief)
-
-`System.encode()` produces a `networkx.DiGraph` with numeric node ids and feature vectors:
-- node features live on `node["x"]`
-- edge features live on `edge["x"]`
-
-This is useful if you want to compile the system into a graph representation for ML workflows.
-For PyTorch Geometric, a typical path is to convert the NetworkX graph into a `torch_geometric.data.Data`:
-
-```python
-from torch_geometric.utils import from_networkx
-
-nx_g = system.encode(edge_subdivisions=10)
-data = from_networkx(nx_g, group_node_attrs=["x"], group_edge_attrs=["x"])
-```
-
----
 
 ## Project status
 
 This project is still in the works. Its purpose is mainly for training a model to control the 
-switches. However, that part is still in the works. For now it is mainly just for simulating dense
+switches. However, that part is still in the works. For now it is mainly for simulating dense
 train systems.
