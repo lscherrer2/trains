@@ -1,0 +1,34 @@
+{
+    "switches": [{ "tag": "A", "state": true }],
+    "deadends": [
+        { "tag": "through" },
+        { "tag": "diverge" },
+        { "tag": "approach" }
+    ],
+    "tracks": [
+        {
+            "from_": { "node": "A", "branch": "through" },
+            "to": { "node": "through" },
+            "length": 10.0
+        },
+        {
+            "from_": { "node": "A", "branch": "diverge" },
+            "to": { "node": "diverge" },
+            "length": 20.0
+        },
+        {
+            "from_": { "node": "A", "branch": "approach" },
+            "to": { "node": "approach" },
+            "length": 30.0
+        }
+    ],
+    "trains": [
+        {
+            "tag": "T",
+            "speed": 1.0,
+            "length": 10.0,
+            "head_distance": 5.0,
+            "head_branch": { "node": "A", "branch": "through" }
+        }
+    ]
+}

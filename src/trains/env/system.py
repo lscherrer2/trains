@@ -1,311 +1,216 @@
 from __future__ import annotations
-from trains.env.components import Switch, Branch, BranchType, Track
-from trains.env.entities import Train
+
+from typing import Any, Iterable
+
+from trains.env.deadend import DeadEnd
+from trains.env.switch import Switch
+from trains.env.track import Track
+from trains.env.train import Train
 from trains.exceptions import SwitchOverlapError, TrainCollisionError
-from typing import overload
-from itertools import islice
-from networkx import DiGraph
-from bidict import bidict
-from math import floor
-from numpy.typing import NDArray
-import numpy as np
+from trains.ser.system import (
+    BranchModel,
+    DeadEndBranchModel,
+)
 
 
 class System:
-    switches: list[Switch]
-    trains: list[Train]
+    def __init__(
+        self,
+        switches: Iterable[Switch],
+        deadends: Iterable[DeadEnd],
+        trains: Iterable[Train],
+    ):
+        self.switches = list(switches)
+        self.deadends = list(deadends)
+        self.trains = list(trains)
 
-    def __init__(self, switches: list[Switch], trains: list[Train]):
-        self.switches = switches
-        self.trains = trains
+    @classmethod
+    def from_json(cls, data: dict[str, Any]) -> System:
+        from trains.ser.system import SystemModel
 
-    def detect_collisions(self) -> set[tuple[Train, Train, Track]] | None:
-        """
-        Returns a set of collisions if there are any. Otherwise returns None.
-        A collision is of the form (train_a, train_b, track) where trains a and
-        b are the trains that collided, and track is the track on which the
-        collision occurred.
-        """
+        model = SystemModel(**data)
 
-        class Collision(Exception):
-            def __init__(self, a: Train, b: Train, track: Track):
-                self.trains = (a, b)
-                self.track = track
+        switches: dict[str, Switch] = {}
+        for switch_model in model.switches:
+            switch = Switch(tag=switch_model.tag, state=switch_model.state)
+            switches |= {switch.tag: switch}
 
-        def _to_track_pos(track: Track, branch: Branch, progress: float) -> float:
-            p = float(np.clip(progress, 0.0, 1.0))
-            if branch is track.ends[0]:
-                return p
-            if branch is track.ends[1]:
-                return 1.0 - p
-            raise ValueError("Branch is not an endpoint of its track")
+        deadends: dict[str, DeadEnd] = {}
+        for end_model in model.deadends:
+            end = DeadEnd(tag=end_model.tag)
+            deadends |= {end.tag: end}
 
-        def _interval_on_track(
-            track: Track,
-            *,
-            end_branch: Branch,
-            start_progress: float,
-            end_progress: float,
-        ) -> tuple[float, float]:
-            a = _to_track_pos(track, end_branch, start_progress)
-            b = _to_track_pos(track, end_branch, end_progress)
-            return (a, b) if a <= b else (b, a)
+        def resolve_branch(bmodel: BranchModel):
+            if isinstance(bmodel, DeadEndBranchModel):
+                return deadends[bmodel.node].branch
+            else:
+                return switches[bmodel.node].get_branch(bmodel.branch)
 
-        collisions: set[tuple[Train, Train, Track]] = set()
-        for i, train_a in enumerate(self.trains):
-            hist_a = list(train_a.history)
-            head_a = hist_a[0]
-            tail_a = hist_a[-1]
-            body_a = hist_a[1:-1]
-            hist_a_tracks = list(map(lambda x: x.track, hist_a))
-            body_a_tracks = list(map(lambda x: x.track, body_a))
+        tracks = []
+        for track_model in model.tracks:
+            from_branch = resolve_branch(track_model.from_)
+            to_branch = resolve_branch(track_model.to)
+            track = Track(
+                ends=(from_branch, to_branch),
+                length=track_model.length,
+            )
+            from_branch.track = track
+            to_branch.track = track
+            tracks.append(track)
 
-            try:
-                for train_b in self.trains[i + 1 :]:
-                    hist_b = list(train_b.history)
-                    head_b = hist_b[0]
-                    tail_b = hist_b[-1]
-                    body_b = hist_b[1:-1]
-                    hist_b_tracks = list(map(lambda x: x.track, hist_b))
-                    body_b_tracks = list(map(lambda x: x.track, body_b))
+        trains = {}
+        for train_model in model.trains:
+            train = Train(
+                tag=train_model.tag,
+                speed=train_model.speed,
+                length=train_model.length,
+                head_distance=train_model.head_distance,
+                head_branch=resolve_branch(train_model.head_branch),
+            )
+            trains |= {train.tag: train}
 
-                    # Body segments take up the full track.
-                    for body_a_track in body_a_tracks:
-                        if body_a_track in hist_b_tracks:
-                            raise Collision(
-                                train_a,
-                                train_b,
-                                body_a_track,
-                            )
+        return cls(
+            switches=switches.values(),
+            deadends=deadends.values(),
+            trains=trains.values(),
+        )
 
-                    for body_b_track in body_b_tracks:
-                        if body_b_track in hist_a_tracks:
-                            raise Collision(
-                                train_a,
-                                train_b,
-                                body_b_track,
-                            )
+    def step(self, dt: float):
+        collisions = self.detect_collisions()
+        if collisions:
+            raise TrainCollisionError(collisions)
 
-                    # Check head-head collision
-                    if head_a.track is head_b.track:
-                        a_start = (
-                            train_a.tail_progress
-                            if tail_a.track is head_a.track
-                            else 0.0
-                        )
-                        a_end = train_a.head_progress
-                        b_start = (
-                            train_b.tail_progress
-                            if tail_b.track is head_b.track
-                            else 0.0
-                        )
-                        b_end = train_b.head_progress
-
-                        a0, a1 = _interval_on_track(
-                            head_a.track,
-                            end_branch=head_a,
-                            start_progress=a_start,
-                            end_progress=a_end,
-                        )
-                        b0, b1 = _interval_on_track(
-                            head_b.track,
-                            end_branch=head_b,
-                            start_progress=b_start,
-                            end_progress=b_end,
-                        )
-
-                        if max(a0, b0) <= min(a1, b1):
-                            raise Collision(
-                                train_a,
-                                train_b,
-                                head_a.track,
-                            )
-
-                    # Check tail-tail collision
-                    if tail_a.track is tail_b.track:
-                        a_end = (
-                            train_a.head_progress
-                            if head_a.track is tail_a.track
-                            else 1.0
-                        )
-                        b_end = (
-                            train_b.head_progress
-                            if head_b.track is tail_b.track
-                            else 1.0
-                        )
-
-                        a0, a1 = _interval_on_track(
-                            tail_a.track,
-                            end_branch=tail_a,
-                            start_progress=train_a.tail_progress,
-                            end_progress=a_end,
-                        )
-                        b0, b1 = _interval_on_track(
-                            tail_b.track,
-                            end_branch=tail_b,
-                            start_progress=train_b.tail_progress,
-                            end_progress=b_end,
-                        )
-
-                        if max(a0, b0) <= min(a1, b1):
-                            raise Collision(
-                                train_a,
-                                train_b,
-                                tail_a.track,
-                            )
-
-            except Collision as e:
-                collisions.add((*e.trains, e.track))
-
-        return collisions or None
-
-    def step(self, dt: float) -> System:
         for train in self.trains:
             train.step(dt)
 
-        collisions = self.detect_collisions()
-        if collisions is not None:
+        if collisions := self.detect_collisions():
             raise TrainCollisionError(collisions)
 
-        return self
+    def set_switch_state(self, switch_tag: str | int, state: bool):
+        switch = self.node_map[switch_tag]
 
-    @overload
-    def set_switch_state(self, switch: Switch, state: bool): ...
+        overlapping_trains = []
+        for train in self.trains:
+            if self._train_overlaps_switch(train, switch):
+                overlapping_trains.append(train)
 
-    @overload
-    def set_switch_state(self, switch: str | int, state: bool): ...
-
-    def set_switch_state(self, switch: Switch | str | int, state: bool):
-        """Update the state of a switch to switched, not switched
-
-        Args:
-            switch (Switch | str | int): The switch to update state for
-            state (bool): True maps the switch to diverging, False to through.
-
-        Raises:
-            TrainOverlapError: If a train overlaps the switch it will raise this
-            exception.
-            ValueError: If a train overlaps the switch it will raise this
-            exception.
-        """
-        if isinstance(switch, (str, int)):
-            switch = self.switch_map[switch]
-
-        # Check that no train overlaps switch
-        if self.is_switch_overlapped(switch):
-            raise SwitchOverlapError("Cannot flip switch while train overlaps")
+        if overlapping_trains:
+            raise SwitchOverlapError(switch, overlapping_trains)
 
         switch.state = state
 
-    def is_switch_overlapped(self, switch: Switch | str | int) -> bool:
-        if isinstance(switch, (str, int)):
-            switch = self.switch_map[switch]
-
-        for train in self.trains:
-            train.trim()
-            for b in islice(train.history, 1, None):
-                if b.parent is switch:
-                    return True
-
+    def _train_overlaps_switch(self, train: Train, switch: Switch) -> bool:
+        for branch in switch.branches:
+            if branch in train.history:
+                return True
         return False
 
-    @property
-    def switch_map(self) -> dict[int | str, Switch]:
-        return {s.tag: s for s in self.switches if s.tag}
+    def detect_collisions(self) -> list[tuple[Train, Train, Track]] | None:
+        collisions = []
 
-    @switch_map.setter
-    def switch_map(self, _):
-        raise AttributeError("`switch_map` is read-only")
-
-    @property
-    def train_map(self) -> dict[int | str, Train]:
-        return {t.tag: t for t in self.trains if t.tag}
-
-    @train_map.setter
-    def train_map(self, _):
-        raise AttributeError("`train_map` is read-only")
-
-    @classmethod
-    def from_json(cls, json: dict) -> System:
-        from trains.serialization.util import system_from_json
-
-        return system_from_json(json)
-
-    def encode(self, edge_subdivisions: int = 10) -> DiGraph:
-        G = DiGraph()
-
-        f_switch_map = bidict()
-        b_switch_map = bidict()
-
-        for i, switch in enumerate(self.switches):
-            f_switch_map |= {switch: 2 * i}
-            b_switch_map |= {switch: 2 * i + 1}
-
-        # Encode forward and backward switches
-        for i, switch in enumerate(self.switches):
-            # Orthogonal vector encoding unique to each switch
-            orth = np.zeros((len(self.switches),), dtype=np.float32)
-            orth[i] = 1.0
-
-            # Concatenate with switch encoding state
-            data = np.concatenate((switch.encode(), orth))
-
-            # Add nodes for forward and backward switch
-            G.add_node(f_switch_map[switch], x=data)
-            G.add_node(b_switch_map[switch], x=data)
-
-        # Encode and add edges
-        for switch in self.switches:
-            for branch in (switch.approach, switch.through, switch.diverging):
-                from_ = branch
-                to = branch.to()
-
-                from_node = (
-                    b_switch_map[from_.parent]
-                    if from_.type_ is BranchType.APPROACH
-                    else f_switch_map[from_.parent]
-                )
-                to_node = (
-                    f_switch_map[to.parent]
-                    if to.type_ is BranchType.APPROACH
-                    else b_switch_map[to.parent]
-                )
-
-                edge_data = np.concatenate(
-                    (branch.encode(), self.encode_overlap(branch, edge_subdivisions))
-                )
-                G.add_edge(from_node, to_node, x=edge_data)
-
-        return G
-
-    def encode_overlap(self, branch: Branch, segments: int) -> NDArray[np.float32]:  # type: ignore
-        overlap = np.zeros((segments,), dtype=np.float32)
+        track_trains: dict[Track, list[Train]] = {}
         for train in self.trains:
-            train.trim()
+            occupied_tracks = self._get_occupied_tracks(train)
+            for track in occupied_tracks:
+                if track not in track_trains:
+                    track_trains[track] = []
+                track_trains[track].append(train)
 
-            hist = train.history
-            head = hist[0]
-            tail = hist[-1]
-
-            hs = int(floor(segments * float(np.clip(train.head_progress, 0.0, 1.0))))
-            ts = int(floor(segments * float(np.clip(train.tail_progress, 0.0, 1.0))))
-
-            if len(hist) >= 3 and any(
-                b is branch for b in islice(hist, 1, len(hist) - 1)
-            ):
-                overlap[:] = 1.0
-                break
-
-            if len(hist) == 1 and branch is head and branch is tail:
-                start = min(ts, hs)
-                end = max(ts, hs)
-                overlap[start:end] = 1.0
+        for track, trains_on_track in track_trains.items():
+            if len(trains_on_track) < 2:
                 continue
 
-            if branch is head:
-                overlap[:hs] = 1.0
+            for i, train_a in enumerate(trains_on_track):
+                for train_b in trains_on_track[i + 1 :]:
+                    if self._trains_collide_on_track(train_a, train_b, track):
+                        collisions.append((train_a, train_b, track))
 
-            if branch is tail:
-                overlap[ts:] = 1.0
+        return collisions if collisions else None
 
-        return overlap
+    def _get_occupied_tracks(self, train: Train) -> set[Track]:
+        tracks = set()
+        distance_covered = 0.0
+
+        for i, branch in enumerate(train.history):
+            if branch.track is None:
+                break
+
+            tracks.add(branch.track)
+
+            if i == 0:
+                distance_on_branch = train.head_distance
+            else:
+                distance_on_branch = branch.track.length
+
+            distance_covered += distance_on_branch
+
+            if distance_covered >= train.length:
+                break
+
+        return tracks
+
+    def _trains_collide_on_track(
+        self, train_a: Train, train_b: Train, track: Track
+    ) -> bool:
+        pos_a = self._get_train_position_on_track(train_a, track)
+        pos_b = self._get_train_position_on_track(train_b, track)
+
+        if pos_a is None or pos_b is None:
+            return False
+
+        start_a, end_a = pos_a
+        start_b, end_b = pos_b
+
+        return not (end_a < start_b or end_b < start_a)
+
+    def _get_train_position_on_track(
+        self, train: Train, track: Track
+    ) -> tuple[float, float] | None:
+        distance_covered = 0.0
+
+        for i, branch in enumerate(train.history):
+            if branch.track is None:
+                break
+
+            if i == 0:
+                distance_on_branch = train.head_distance
+            else:
+                distance_on_branch = branch.track.length
+
+            if branch.track is track:
+                if i == 0:
+                    head_pos = train.head_distance
+                    tail_pos = max(0.0, head_pos - train.length)
+                else:
+                    remaining_length = train.length - distance_covered
+                    head_pos = branch.track.length
+                    tail_pos = branch.track.length - remaining_length
+
+                return (min(tail_pos, head_pos), max(tail_pos, head_pos))
+
+            distance_covered += distance_on_branch
+
+            if distance_covered >= train.length:
+                break
+
+        return None
+
+    @property
+    def nodes(self):
+        return self.switches + self.deadends
+
+    @property
+    def node_map(self):
+        return self.switch_map | self.deadend_map
+
+    @property
+    def switch_map(self):
+        return {s.tag: s for s in self.switches}
+
+    @property
+    def deadend_map(self):
+        return {d.tag: d for d in self.deadends}
+
+    @property
+    def train_map(self):
+        return {t.tag: t for t in self.trains}

@@ -1,54 +1,49 @@
-from unittest import TestCase
-from trains.env import System
 import json
+from unittest import TestCase
+
+from trains.env import System
 
 
 class TestJsonInit(TestCase):
     def setUp(self):
-        with open("test/data/system.json") as f:
+        with open("test/data/init_system.json") as f:
             graph_json = json.load(f)
 
         self.G = System.from_json(graph_json)
 
-    def test_switches(self):
-        G = self.G
+    def test_components(self):
+        self.assertEqual(len(self.G.switches), 1)
+        self.assertEqual(len(self.G.deadends), 3)
+        self.assertEqual(len(self.G.trains), 1)
 
-        self.assertEqual(len(G.switches), 2, "Loaded graph must have 2 switches")
-        self.assertIn("A", G.switch_map)
-        self.assertIn("B", G.switch_map)
+        self.assertIn("A", self.G.switch_map)
+        self.assertIn("T", self.G.train_map)
+        for b in ["approach", "through", "diverge"]:
+            self.assertIn(b, self.G.deadend_map)
 
     def test_trains(self):
-        G = self.G
+        self.assertIn("T", self.G.train_map)
 
-        switch_a = G.switch_map["A"]
-        switch_b = G.switch_map["B"]
+        train = self.G.train_map["T"]
+        self.assertEqual(train.tag, "T")
+        self.assertEqual(train.speed, 1.0)
+        self.assertEqual(train.length, 10.0)
+        self.assertEqual(train.head_distance, 5.0)
 
-        self.assertEqual(len(G.trains), 1, "Loaded graph must have 1 train")
-        self.assertIn("T", G.train_map)
-        train = G.train_map["T"]
-
-        self.assertAlmostEqual(train.head_progress, 0.5, 5)
-        self.assertAlmostEqual(train.tail_progress, 2.0 / 3.0, 5)
-
-        self.assertAlmostEqual(train.head_distance, 5.0, 5)
-        self.assertAlmostEqual(train.tail_distance, 10.0, 5)
-
-        self.assertAlmostEqual(train.speed, 1.0, 5)
-        self.assertIs(train.history[0], switch_a.through)
-
-        self.assertEqual(len(train.history), 2)
-        self.assertIs(train.history[0], switch_a.through)
-        self.assertIs(train.history[-1], switch_b.through)
+        target_branch = self.G.switch_map["A"].through
+        self.assertIs(train.head_branch, target_branch)
 
     def test_tracks(self):
-        G = self.G
-
-        switch_a = G.switch_map["A"]
-        switch_b = G.switch_map["B"]
-
-        self.assertIs(switch_a.through.track, switch_b.approach.track)
-        self.assertAlmostEqual(switch_a.through.track.length, 10.0, 5)
-        self.assertIs(switch_a.diverging.track, switch_b.diverging.track)
-        self.assertAlmostEqual(switch_a.diverging.track.length, 20.0, 5)
-        self.assertIs(switch_a.approach.track, switch_b.through.track)
-        self.assertAlmostEqual(switch_a.approach.track.length, 30.0, 5)
+        switch = self.G.switch_map["A"]
+        branches = {
+            "through": switch.through.track,
+            "diverge": switch.diverge.track,
+            "approach": switch.approach.track,
+        }
+        deadends = {
+            "approach": self.G.deadend_map["approach"].branch.track,
+            "through": self.G.deadend_map["through"].branch.track,
+            "diverge": self.G.deadend_map["diverge"].branch.track,
+        }
+        for b in ["approach", "through", "diverge"]:
+            self.assertIs(branches[b], deadends[b])

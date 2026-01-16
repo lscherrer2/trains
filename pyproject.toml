@@ -4,10 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "trains"
-version = "0.1.0"
+version = "0.2.0"
 requires-python = ">=3.13"
 dependencies = [
     "bidict>=0.23.1",
+    "fnutil>=0.0.1",
     "jsonschema>=4.25.0",
     "networkx>=3.5",
     "pydantic>=2.12.5",

@@ -251,6 +251,18 @@ wheels = [
 ]
 
 [[package]]
+name = "fnutil"
+version = "0.0.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "typeguard" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/3a/04/eb7dd5102c9ed6c0ed46f237e699fc24fdb8ed8c0c0024041a97c5780247/fnutil-0.0.1.tar.gz", hash = "sha256:732de2097d9efd1e84edda2080ee0481342638315d93817d7fe7155b4468c640", size = 9091, upload-time = "2026-01-03T21:41:06.762Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d4/c3/3857b2eba9a39853f46a6eb1f1ad600e8f6fb52df841956c79117e55c537/fnutil-0.0.1-py3-none-any.whl", hash = "sha256:2174503feee10e9b1d268655731e7c6b274a667dffe6b87a0a3f7282c59a71f2", size = 8537, upload-time = "2026-01-03T21:41:05.233Z" },
+]
+
+[[package]]
 name = "fonttools"
 version = "4.61.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1317,6 +1329,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "bidict" },
+    { name = "fnutil" },
     { name = "jsonschema" },
     { name = "networkx" },
     { name = "pydantic" },
@@ -1332,6 +1345,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "bidict", specifier = ">=0.23.1" },
+    { name = "fnutil", specifier = ">=0.0.1" },
     { name = "jsonschema", specifier = ">=4.25.0" },
     { name = "networkx", specifier = ">=3.5" },
     { name = "pydantic", specifier = ">=2.12.5" },
@@ -1351,6 +1365,18 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/5c/38/db80e48b9220c9bce872b0f616ad0446cdf554a40b85c7865cbca99ab3c2/triton-3.5.0-cp313-cp313t-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:c83f2343e1a220a716c7b3ab9fccfcbe3ad4020d189549200e2d2e8d5868bed9", size = 170577179, upload-time = "2025-10-13T16:38:17.865Z" },
     { url = "https://files.pythonhosted.org/packages/ff/60/1810655d1d856c9a4fcc90ee8966d85f552d98c53a6589f95ab2cbe27bb8/triton-3.5.0-cp314-cp314-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:da0fa67ccd76c3dcfb0bffe1b1c57c685136a6bd33d141c24d9655d4185b1289", size = 170487949, upload-time = "2025-10-13T16:38:24.881Z" },
     { url = "https://files.pythonhosted.org/packages/fb/b7/1dec8433ac604c061173d0589d99217fe7bf90a70bdc375e745d044b8aad/triton-3.5.0-cp314-cp314t-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:317fe477ea8fd4524a6a8c499fb0a36984a56d0b75bf9c9cb6133a1c56d5a6e7", size = 170580176, upload-time = "2025-10-13T16:38:31.14Z" },
+]
+
+[[package]]
+name = "typeguard"
+version = "4.4.4"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c7/68/71c1a15b5f65f40e91b65da23b8224dad41349894535a97f63a52e462196/typeguard-4.4.4.tar.gz", hash = "sha256:3a7fd2dffb705d4d0efaed4306a704c89b9dee850b688f060a8b1615a79e5f74", size = 75203, upload-time = "2025-06-18T09:56:07.624Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/1b/a9/e3aee762739c1d7528da1c3e06d518503f8b6c439c35549b53735ba52ead/typeguard-4.4.4-py3-none-any.whl", hash = "sha256:b5f562281b6bfa1f5492470464730ef001646128b180769880468bd84b68b09e", size = 34874, upload-time = "2025-06-18T09:56:05.999Z" },
 ]
 
 [[package]]

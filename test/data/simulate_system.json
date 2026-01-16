@@ -1,0 +1,48 @@
+{
+    "switches": [
+        { "tag": "S1", "state": false },
+        { "tag": "S2", "state": false }
+    ],
+    "deadends": [
+        { "tag": "D1" },
+        { "tag": "D2" },
+        { "tag": "D3" },
+        { "tag": "D4" }
+    ],
+    "tracks": [
+        {
+            "from_": { "node": "D1" },
+            "to": { "node": "S1", "branch": "approach" },
+            "length": 10.0
+        },
+        {
+            "from_": { "node": "S1", "branch": "through" },
+            "to": { "node": "S2", "branch": "approach" },
+            "length": 10.0
+        },
+        {
+            "from_": { "node": "S1", "branch": "diverge" },
+            "to": { "node": "D2" },
+            "length": 10.0
+        },
+        {
+            "from_": { "node": "S2", "branch": "through" },
+            "to": { "node": "D3" },
+            "length": 10.0
+        },
+        {
+            "from_": { "node": "S2", "branch": "diverge" },
+            "to": { "node": "D4" },
+            "length": 10.0
+        }
+    ],
+    "trains": [
+        {
+            "tag": "T1",
+            "speed": 1.0,
+            "length": 2.0,
+            "head_distance": 5.0,
+            "head_branch": { "node": "D1" }
+        }
+    ]
+}

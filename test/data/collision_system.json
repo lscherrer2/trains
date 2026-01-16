@@ -1,47 +1,27 @@
 {
-  "switches": ["A", "B"],
-  "tracks": [
-    {
-      "from_": { "switch": "A", "type_": "through" },
-      "to": { "switch": "B", "type_": "approach" },
-      "length": 10.0
-    }
-  ],
-  "trains": [
-    {
-      "tag": "T1",
-      "speed": 0.0,
-      "head_progress": 0.2,
-      "length": 2.0,
-      "history": [{ "switch": "A", "type_": "through" }]
-    },
-    {
-      "tag": "T2",
-      "speed": 0.0,
-      "head_progress": 0.95,
-      "length": 2.0,
-      "history": [{ "switch": "A", "type_": "through" }]
-    },
-    {
-      "tag": "T3",
-      "speed": 0.0,
-      "head_progress": 0.25,
-      "length": 2.0,
-      "history": [{ "switch": "A", "type_": "through" }]
-    },
-    {
-      "tag": "TA",
-      "speed": 0.0,
-      "head_progress": 0.65,
-      "length": 1.0,
-      "history": [{ "switch": "A", "type_": "through" }]
-    },
-    {
-      "tag": "TB",
-      "speed": 0.0,
-      "head_progress": 0.45,
-      "length": 1.0,
-      "history": [{ "switch": "B", "type_": "approach" }]
-    }
-  ]
+    "switches": [],
+    "deadends": [{ "tag": "A" }, { "tag": "B" }],
+    "tracks": [
+        {
+            "from_": "A",
+            "to": "B",
+            "length": 10.0
+        }
+    ],
+    "trains": [
+        {
+            "tag": "T1",
+            "speed": 0.0,
+            "length": 1.0,
+            "head_distance": 5.0,
+            "head_branch": { "node": "A" }
+        },
+        {
+            "tag": "T2",
+            "speed": 1.0,
+            "length": 1.0,
+            "head_distance": 2.0,
+            "head_branch": { "node": "A" }
+        }
+    ]
 }
